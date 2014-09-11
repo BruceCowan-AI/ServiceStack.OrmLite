@@ -26,7 +26,6 @@ namespace ServiceStack.OrmLite.Tests.Issues
 
             _provider = (OracleOrmLiteDialectProvider)OrmLiteConfig.DialectProvider;
             _provider.InsertIdCachePurgeInterval = new TimeSpan(0, 0, 0, 0, 100);
-            _provider.InsertIdCacheKeepTime = new TimeSpan(0, 0, 0, 0, 200);
         }
 
         [Test]
@@ -110,69 +109,6 @@ namespace ServiceStack.OrmLite.Tests.Issues
                 Assert.That(id1Later, Is.EqualTo(id1Immediate));
                 Assert.That(id2Later, Is.EqualTo(id2Immediate));
                 Assert.That(id3Later, Is.EqualTo(id3Immediate));
-            }
-            finally
-            {
-                if (db1 != null)
-                    db1.Close();
-                if (db2 != null)
-                    db2.Close();
-            }
-            
-        }
-
-        [Test]
-        public void PurgingOfIdsWorks()
-        {
-            IDbConnection db1 = null, db2 = null;
-            try
-            {
-                db1 = OpenDbConnection();
-                db2 = OpenDbConnection();
-                db1.Insert(new MultiConnTable1 { Data = "third" }, true);
-
-                Thread.Sleep(_provider.InsertIdCacheKeepTime);
-
-                var id2Immediate = db2.Insert(new MultiConnTable2 { Data = "third" }, true);
-                var id1Later = db1.LastInsertId();
-
-                Thread.Sleep(_provider.InsertIdCacheKeepTime);
-
-                var id2Later = db2.LastInsertId();
-
-                Assert.That(id1Later, Is.EqualTo(0));
-                Assert.That(id2Later, Is.EqualTo(id2Immediate));
-            }
-            finally
-            {
-                if (db1 != null)
-                    db1.Close();
-                if (db2 != null)
-                    db2.Close();
-            }
-        }
-
-        [Test]
-        public void PurgingOfIdsForASingleTableWorks()
-        {
-            IDbConnection db1 = null, db2 = null;
-            try
-            {
-                db1 = OpenDbConnection();
-                db2 = OpenDbConnection();
-                db1.Insert(new MultiConnTable1 { Data = "third" }, true);
-
-                Thread.Sleep(_provider.InsertIdCacheKeepTime);
-
-                var id2Immediate = db2.Insert(new MultiConnTable1 { Data = "fourth" }, true);
-                var id1Later = db1.LastInsertId();
-
-                Thread.Sleep(_provider.InsertIdCacheKeepTime);
-
-                var id2Later = db2.LastInsertId();
-
-                Assert.That(id1Later, Is.EqualTo(0));
-                Assert.That(id2Later, Is.EqualTo(id2Immediate));
             }
             finally
             {

@@ -147,68 +147,57 @@ namespace ServiceStack.OrmLite.Oracle
             return connection;
         }
 
-        private class TimedId
+        private class ConnectionId
         {
+            public WeakReference ConnectionReference;
             public long Id;
-            public IDbConnection Connection;
-            public DateTime Time;
         }
-        private readonly ConcurrentDictionary<IDbConnection, TimedId> _insertedIdCache = new ConcurrentDictionary<IDbConnection, TimedId>();
-        private readonly ConcurrentQueue<TimedId> _insertedIdQueue = new ConcurrentQueue<TimedId>();
-        private readonly object _insertedIdLock = new object();
-        private DateTime _insertIdCachePurgeTime = DateTime.MinValue;
-        public TimeSpan InsertIdCachePurgeInterval = new TimeSpan(0, 10, 0);
-        public TimeSpan InsertIdCacheKeepTime = new TimeSpan(1, 0, 0);
+        private List<ConnectionId> _connectionIdCache = new List<ConnectionId>();
+        private readonly object _connectionIdCacheLock = new object();
+        private DateTime _connectionIdCacheLastPurgedTime = DateTime.UtcNow;
+        public TimeSpan InsertIdCachePurgeInterval = TimeSpan.FromSeconds(20);
 
         private void SaveInsertId(IDbConnection connection, long id)
         {
-            var now = DateTime.UtcNow;
-            var newCacheEntry = new TimedId {Connection = connection, Id = id, Time = now};
-            _insertedIdCache[connection] = newCacheEntry;
-            _insertedIdQueue.Enqueue(newCacheEntry);
-
-            PurgeInsertIdCache(now);
-        }
-
-        private void PurgeInsertIdCache(DateTime now)
-        {
-            if (now - _insertIdCachePurgeTime >= InsertIdCachePurgeInterval && Monitor.TryEnter(_insertedIdLock))
+            lock (_connectionIdCacheLock)
             {
-                try
+                _connectionIdCache.Add(new ConnectionId
                 {
-                    TimedId queuedCacheEntry;
-                    while (_insertedIdQueue.TryPeek(out queuedCacheEntry))
-                    {
-                        if (now - queuedCacheEntry.Time < InsertIdCacheKeepTime)
-                            break;
+                    ConnectionReference = new WeakReference(connection),
+                    Id = id
+                });
 
-                        _insertedIdQueue.TryDequeue(out queuedCacheEntry);
-
-                        TimedId currentCacheEntry;
-                        if (_insertedIdCache.TryGetValue(queuedCacheEntry.Connection, out currentCacheEntry) && ReferenceEquals(currentCacheEntry, queuedCacheEntry))
-                            RemoveInsertId(queuedCacheEntry.Connection);
-                    }
-                    _insertIdCachePurgeTime = now;
-                }
-                finally
-                {
-                    Monitor.Exit(_insertedIdLock);
-                }
+                PurgeInsertIdCache();
             }
         }
 
-        private void RemoveInsertId(IDbConnection connection)
+        private void PurgeInsertIdCache()
         {
-            TimedId unused;
-            _insertedIdCache.TryRemove(connection, out unused);
+            var now = DateTime.UtcNow;
+            if ((now - _connectionIdCacheLastPurgedTime) < InsertIdCachePurgeInterval)
+                return;
+
+            var newCache = new List<ConnectionId>(_connectionIdCache.Capacity);
+
+            newCache.AddRange(_connectionIdCache.Where(item => item.ConnectionReference.IsAlive));
+
+            _connectionIdCache = newCache;
+            _connectionIdCacheLastPurgedTime = now;
         }
 
         public override long GetLastInsertId(IDbCommand dbCmd)
         {
-            TimedId lastInsertId;
-            if (_insertedIdCache.TryGetValue(dbCmd.Connection, out lastInsertId))
-                return lastInsertId.Id;
-            return 0;
+            var connection = dbCmd.Connection;
+            lock (_connectionIdCacheLock)
+            {
+                for (var i = _connectionIdCache.Count - 1; i >= 0; i--)
+                {
+                    var connectionReference = _connectionIdCache[i].ConnectionReference;
+                    if (connectionReference.IsAlive && ReferenceEquals(connectionReference.Target, connection))
+                        return _connectionIdCache[i].Id;
+                }
+                return 0;
+            }
         }
 
         public override long InsertAndGetLastInsertId<T>(IDbCommand dbCmd)
@@ -962,7 +951,6 @@ namespace ServiceStack.OrmLite.Oracle
                 }
                 else
                 {
-                    RemoveInsertId(connection);
                     retObj = value;
                 }
                 return retObj;
