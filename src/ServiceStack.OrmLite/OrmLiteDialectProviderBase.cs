@@ -638,6 +638,7 @@ namespace ServiceStack.OrmLite
 
         public virtual bool PrepareParameterizedUpdateStatement<T>(IDbCommand cmd, ICollection<string> updateFields = null)
         {
+//TODO Fix this to generate SQL using default value for fields with UseDefaultValueOnUpdate = true
             var sqlFilter = new StringBuilder();
             var sql = new StringBuilder();
             var modelDef = typeof(T).GetModelDefinition();
@@ -891,6 +892,7 @@ namespace ServiceStack.OrmLite
 
         public virtual void PrepareUpdateRowStatement(IDbCommand dbCmd, object objWithProperties, ICollection<string> updateFields = null)
         {
+//TODO Fix this to throw if updateFields includes a field with UseDefaultValueOnUpdate = true
             var sqlFilter = new StringBuilder();
             var sql = new StringBuilder();
             var modelDef = objWithProperties.GetType().GetModelDefinition();

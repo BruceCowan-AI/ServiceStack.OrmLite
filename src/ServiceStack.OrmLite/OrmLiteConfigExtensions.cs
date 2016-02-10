@@ -156,6 +156,7 @@ namespace ServiceStack.OrmLite
                         ? stringLengthAttr.MaximumLength
                         : (int?)null,
                     DefaultValue = defaultValueAttr != null ? defaultValueAttr.DefaultValue : null,
+                    UseDefaultValueOnUpdate = defaultValueAttr != null ? defaultValueAttr.OnUpdate : false,
                     ForeignKey = foreignKeyAttr == null
                         ? referencesAttr != null ? new ForeignKeyConstraint(referencesAttr.Type) : null
                         : new ForeignKeyConstraint(foreignKeyAttr.Type,

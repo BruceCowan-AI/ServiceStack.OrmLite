@@ -60,6 +60,8 @@ namespace ServiceStack.OrmLite
 
         public string DefaultValue { get; set; }
 
+        public bool UseDefaultValueOnUpdate { get; set; }
+
         public ForeignKeyConstraint ForeignKey { get; set; }
 
         public PropertyGetterDelegate GetValueFn { get; set; }

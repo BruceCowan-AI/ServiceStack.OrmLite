@@ -716,18 +716,20 @@ namespace ServiceStack.OrmLite.Oracle
 
         public override void PrepareUpdateRowStatement(IDbCommand dbCmd, object objWithProperties, ICollection<string> updateFields = null)
         {
+//TODO Fix this to throw if updateFields includes a field with UseDefaultValueOnUpdate = true
+//TODO I'm not sure this really needs to be different from the base one, have made it more similar, but not happy with it
             var sqlFilter = new StringBuilder();
             var sql = new StringBuilder();
-            var tableType = objWithProperties.GetType();
-            var modelDef = GetModel(tableType);
+            var modelDef = GetModel(objWithProperties.GetType());
+            var updateAllFields = updateFields == null || updateFields.Count == 0;
 
             foreach (var fieldDef in modelDef.FieldDefinitions)
             {
-                if (fieldDef.IsComputed) continue;
+                if (fieldDef.ShouldSkipUpdate())
+                    continue;
 
-                var updateFieldsEmptyOrNull = updateFields == null || updateFields.Count == 0;
                 if ((fieldDef.IsPrimaryKey || fieldDef.Name == OrmLiteConfig.IdField)
-                    && updateFieldsEmptyOrNull)
+                    && updateAllFields)
                 {
                     if (sqlFilter.Length > 0)
                         sqlFilter.Append(" AND ");
@@ -740,7 +742,7 @@ namespace ServiceStack.OrmLite.Oracle
                     continue;
                 }
 
-                if (!updateFieldsEmptyOrNull && !updateFields.Contains(fieldDef.Name))
+                if (!updateAllFields && !updateFields.Contains(fieldDef.Name))
                     continue;
 
                 if (sql.Length > 0)
