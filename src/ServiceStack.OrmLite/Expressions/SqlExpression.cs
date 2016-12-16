@@ -2445,6 +2445,21 @@ namespace ServiceStack.OrmLite
             dbCmd.Parameters.Add(parameter);
             return parameter;
         }
+
+        public static IDbDataParameter AddParam(this IOrmLiteDialectProvider dialectProvider,
+            IDbCommand dbCmd,
+            object value,
+            FieldDefinition fieldDef)
+        {
+            var paramName = dbCmd.Parameters.Count.ToString();
+            var parameter = dialectProvider.CreateParam(paramName, value, fieldDef?.ColumnType);
+
+            if (fieldDef != null)
+                dialectProvider.SetParameter(fieldDef, parameter);
+
+            dbCmd.Parameters.Add(parameter);
+            return parameter;
+        }
     }
 }
 

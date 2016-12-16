@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq.Expressions;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using ServiceStack.OrmLite.Converters;
@@ -105,13 +106,17 @@ namespace ServiceStack.OrmLite
 
         void PrepareParameterizedInsertStatement<T>(IDbCommand cmd, ICollection<string> insertFields = null);
 
-        bool PrepareParameterizedUpdateStatement<T>(IDbCommand cmd, ICollection<string> updateFields = null);
+        ICollection<IDataParameter> PrepareParameterizedUpdateStatement<T>(IDbCommand cmd, ref bool hadRowVersion);
 
         bool PrepareParameterizedDeleteStatement<T>(IDbCommand cmd, IDictionary<string, object> delteFieldValues);
 
         void PrepareStoredProcedureStatement<T>(IDbCommand cmd, T obj);
 
         void SetParameterValues<T>(IDbCommand dbCmd, object obj);
+
+        void SetParameterValues<T>(IDbCommand dbCmd, ICollection<IDataParameter> parameters, object obj);
+
+        void SetParameter(FieldDefinition fieldDef, IDbDataParameter p);
 
         Dictionary<string, FieldDefinition> GetFieldDefinitionMap(ModelDefinition modelDef);
 
@@ -124,6 +129,8 @@ namespace ServiceStack.OrmLite
         void PrepareUpdateRowStatement<T>(IDbCommand dbCmd, Dictionary<string, object> args, string sqlFilter);
 
         void PrepareUpdateRowAddStatement<T>(IDbCommand dbCmd, Dictionary<string, object> args, string sqlFilter);
+
+        void AddDefaultUpdateFields(IDbCommand dbCmd, ModelDefinition modelDef, ICollection<FieldDefinition> updateFields, StringBuilder sql, string errorMessage);
 
         string ToDeleteStatement(Type tableType, string sqlFilter, params object[] filterParams);
 

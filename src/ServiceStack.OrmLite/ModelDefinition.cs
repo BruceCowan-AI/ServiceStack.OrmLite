@@ -155,6 +155,11 @@ namespace ServiceStack.OrmLite
             return null;
         }
 
+        public IEnumerable<FieldDefinition> GetUpdateDefaultFieldDefinitions()
+        {
+            return FieldDefinitionsArray.Where(field => field.UseDefaultOnUpdate);
+        }
+
         public void AfterInit()
         {
             fieldDefinitionsArray = FieldDefinitions.ToArray();

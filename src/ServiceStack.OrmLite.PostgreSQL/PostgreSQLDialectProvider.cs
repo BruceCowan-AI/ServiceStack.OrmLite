@@ -133,7 +133,7 @@ namespace ServiceStack.OrmLite.PostgreSQL
             return new SelectItemExpression(this, "xmin", field.FieldName);
         }
 
-        public override void AppendFieldCondition(StringBuilder sqlFilter, FieldDefinition fieldDef, IDbCommand cmd)
+        public override IDataParameter AppendFieldCondition(StringBuilder sqlFilter, FieldDefinition fieldDef, IDbCommand cmd)
         {
             var columnName = fieldDef.IsRowVersion
                 ? RowVersionFieldComparer
@@ -144,7 +144,7 @@ namespace ServiceStack.OrmLite.PostgreSQL
                 .Append("=")
                 .Append(this.GetParam(SanitizeFieldNameForParamName(fieldDef.FieldName)));
 
-            AddParameter(cmd, fieldDef);
+            return AddParameter(cmd, fieldDef);
         }
 
         public override string GetQuotedValue(string paramValue)

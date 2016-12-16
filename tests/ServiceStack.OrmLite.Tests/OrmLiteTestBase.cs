@@ -4,6 +4,7 @@ using System.Data.Common;
 using System.IO;
 using NUnit.Framework;
 using ServiceStack.Logging;
+using ServiceStack.OrmLite.SqlServer.Converters;
 using ServiceStack.OrmLite.Oracle;
 
 namespace ServiceStack.OrmLite.Tests
@@ -129,9 +130,13 @@ namespace ServiceStack.OrmLite.Tests
                     dbFactory.AutoDisposeConnection = false;
                     return dbFactory;
                 case Dialect.SqlServer:
-                    return Init(Config.SqlServerBuildDb, SqlServerDialect.Provider);
+                    dbFactory = Init(Config.SqlServerBuildDb, SqlServerDialect.Provider);
+                    OrmLiteConfig.DialectProvider.RegisterConverter<DateTime>(new SqlServerDateTime2Converter());
+                    return dbFactory;
                 case Dialect.SqlServer2012:
-                    return Init(Config.SqlServerBuildDb, SqlServer2012Dialect.Provider);
+                    dbFactory = Init(Config.SqlServerBuildDb, SqlServer2012Dialect.Provider);
+                    OrmLiteConfig.DialectProvider.RegisterConverter<DateTime>(new SqlServerDateTime2Converter());
+                    return dbFactory;
                 case Dialect.MySql:
                     return Init(Config.MySqlDb, MySqlDialect.Provider);
                 case Dialect.PostgreSql:
