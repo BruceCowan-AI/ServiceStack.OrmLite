@@ -76,6 +76,28 @@ namespace ServiceStack.OrmLite.Tests
         }
 
         [Test]
+        public void InsertAll_respects_default_values()
+        {
+            using (var db = OpenDbConnection())
+            {
+                db.DropAndCreateTable<DefaultValues>();
+
+                var defaultValues1 = new DefaultValues { Id = 1 };
+                var defaultValues2 = new DefaultValues { Id = 2, CreatedDateUtc = new DateTime(2011,1,1,1,1,1,DateTimeKind.Utc)};
+                db.InsertAll(new [] {defaultValues1, defaultValues2});
+
+                var rows = db.Select<DefaultValues>();
+                Assert.That(rows.Count, Is.EqualTo(2));
+
+                var expectedDate = Dialect != Dialect.MySql && Dialect != Dialect.Firebird
+                    ? DateTime.UtcNow.Date
+                    : DateTime.Now.Date; //MySql CURRENT_TIMESTAMP == LOCAL_TIME
+                Assert.That(rows[0].CreatedDateUtc, Is.GreaterThan(expectedDate));
+                Assert.That(rows[1].CreatedDateUtc, Is.GreaterThan(expectedDate));
+            }
+        }
+
+        [Test]
         public void Can_use_ToUpdateStatement_to_generate_inline_SQL()
         {
             using (var db = OpenDbConnection())
